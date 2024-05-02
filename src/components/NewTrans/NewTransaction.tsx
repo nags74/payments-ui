@@ -1,5 +1,6 @@
-import { ChangeEvent, FormEvent, useReducer, useState } from "react";
-import { PaymentType,addNewTransaction } from "../../data/DataFunctions";
+import { ChangeEvent, FormEvent, useReducer, useEffect, useRef } from "react";
+import { PaymentType, addNewTransaction } from "../../data/DataFunctions";
+import { useNavigate } from "react-router-dom";
 
 const NewTransaction = () : JSX.Element => {
 
@@ -20,33 +21,34 @@ const NewTransaction = () : JSX.Element => {
         type: "SALE",
       };
     
-    const [message, setMessage] = useState<string>("");
 
     const [newTransaction, dispatch] = useReducer(reducerFunction, initialNewTransactionState )
  
-    const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
-        event.preventDefault();
-        setMessage("saving");
-        console.log(newTransaction);
-        const response = addNewTransaction(newTransaction);
-        response
-          .then((result) => {
-            if (result.status === 200) {
-              setMessage("new transaction added");
-            } else {
-              setMessage("something went wrong - error code was " + result.status);
-            }
-          })
-          .catch((error) => console.log("something went wrong ", error));
-      };
+      const navigate = useNavigate();
+
+    const handleSubmit = (e : FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        addNewTransaction(newTransaction).then( result => {
+            //should check the status + errors
+            console.log(result.data);
+            const country = result.data.country;
+            navigate("/find?country="+country);
+        })
+        
+    }
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         dispatch({field : e.target.id, value : e.target.value});
     }
     
+    const orderIdInput = useRef<HTMLInputElement | null>(null);
+    useEffect( () => {
+        orderIdInput.current?.focus(); 
+    }, [])
+
     return (<form className="addTransactionsForm" onSubmit={handleSubmit}>
     <h2>New transaction</h2>
     <label htmlFor="orderId">Order Id</label>
-    <input type="text" id="orderId"  onChange={handleChange} value={newTransaction.orderId}/>
+    <input type="text" id="orderId" ref={orderIdInput} onChange={handleChange} value={newTransaction.orderId}/>
     <br/>
     <label htmlFor="date">Date</label>
     <input type="date" id="date"  onChange={handleChange} value={newTransaction.date}/>
@@ -70,7 +72,6 @@ const NewTransaction = () : JSX.Element => {
     <input type="text"  id="type"  onChange={handleChange} value={newTransaction.type} />
     <br/>
     <button type="submit">Save</button>
-    <div className="addTransactionMessage">{message}</div>
 </form>);
 
 }
